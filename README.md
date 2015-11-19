@@ -1,7 +1,7 @@
 # livecoding-wurlitzer
 
 Live coding a reproduction of Chris Staples '[Wurlitzer](https://www.youtube.com/watch?v=edhvr72ZJ_s)'
-Starts with sequence buffers. Then instruments. Then instrument triggers. Inspired by overtone examples.
+Starts with sequence buffers. Then instruments. Then instrument triggers. Inspired by overtone examples. Attempts to be literate coding.
 
 ## Usage
 
