@@ -1,7 +1,8 @@
 (ns livecoding.core
   (:use [overtone.live]
-        [overtone.synth.stringed]))
-
+        [overtone.synth.stringed]
+        [overtone.at-at :only [every]]
+        ))
 
 
 ;;(def modsamp (sample (freesound-path 281867)))
@@ -141,15 +142,13 @@
         reverb (free-verb clp 0.4 0.8 0.2)]
     (* amp (env-gen (perc 0.0001 dur) :action FREE) reverb)))
 
+(plucked-string)
 
-(play-chord plucked-string (chord :C3 :minor))
-
-;;Beep
+;;Beep... very telepop musik
 (definst beep [note 60]
   (let [src (sin-osc (midicps note))
         env (env-gen (perc 0.1 1.5) :action FREE)]
     (* src env)))
-
 
 (beep)
 
@@ -157,7 +156,6 @@
 (beep (note "A#4"))
 (beep (note "C#5"))
 (beep (note "D#5"))
-(play-chord beep (chord :C4 :minor))
 
 
 ;; Controls for firing sounds
@@ -167,6 +165,13 @@
   (doseq [note a-chord] (instrument note)))
 
 (chord :C3 :minor)
+
+
+(play-chord plucked-string (chord :C3 :minor))
+(play-chord beep (chord :C4 :minor))
+
+;;careful, sounds hideous
+(play-chord low (chord :C4 :minor))
 
 ;;Melodies
 ;;currently doesn't take the instrument as an argument...
@@ -202,12 +207,15 @@
 (def wurlitzer2 (map note ["F#4" "G#4" "A#4" "C#5" 0 "A#4" 0 "C#5" "D#5" "C#5" "A#4" "G#4" 0 "D#4"]))
 
 (play-beep (now) wurlitzer2 364)
+
+;;careful, sounds hideous
 (play-low (now) wurlitzer2 364)
 
 (play-string (now) wurlitzer2 364)
 
 (stop)
 
+;;what's map doing? taking in a collection of strings representing notes, and returning of collection of integers that represent those notes in MIDI
 
 (map note ["F#5" "A#4" "C#5" "D#5" "F#5" "A#4" "C#5" "D#5" "F#5" "A#4" "C#5" "D#5" "C#5" "A#4" "G#4" "F#4"])
 
@@ -262,25 +270,63 @@
 (def wurlitzer3 (map note ["A#5" "D#5" "F#5" "G#5" "A#5" "D#5" "F#5" "G#5" "A#5" "D#5" "F#5" "G#5" "F#5" "D#5" "C#5" "A#4"]))
 
 (play-beep (now) wurlitzer3 364)
-(beep (note ))
+
 
 (beep (note "D#6"))
 
+;;how to play a sequence of rifs. Riff 4, 2, 4, 4
 (play-beep (now) (lazy-cat wurlitzer4 wurlitzer2 wurlitzer4 wurlitzer4) 374)
 (play-beep (now) wurlitzer2 374)
 
+
+
+;;now the drums
+
+;;Every time we stop all sounds, we have to restart the drum track synths
+
+;; Now, let's start up all the synths:
+(do
+  (def r-cnt (root-cnt))
+  (def b-cnt (beat-cnt))
+  (def b-trg (beat-trg))
+  (def r-trg (root-trg))
+
+  (def kicks (doall
+              (for [x (range 16)]
+                (mono-sequencer :buf kick-s :beat-num x :sequencer buf-0))))
+
+  (def clicks (doall
+               (for [x (range 16)]
+                 (mono-sequencer :buf click-s :beat-num x :sequencer buf-1))))
+
+  (def ticks (doall
+              (for [x (range 16)]
+                (mono-sequencer :buf tick-s :beat-num x :sequencer buf-2))))
+
+  (def subbies (doall
+                (for [x (range 16)]
+                  (mono-sequencer :buf subby-s :beat-num x :sequencer buf-3))))
+
+  ;;note sequences
+  (def dub-note-seq (note-sequencer buf-4 meter-cnt-bus32 piano-note-bus))
+  )
 
 
 ;;Drum tracks
 (buffer-write! buf-0 [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0])
 (buffer-write! buf-0 [0 1 0 0 1 0 0 1 0 0 1 0 0 0 0 0])
 (buffer-write! buf-0 [1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0])
+
 (buffer-write! buf-1 [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0])
+
 (buffer-write! buf-2 [1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1])
 (buffer-write! buf-2 [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0])
+
 (buffer-write! buf-3 [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0])
 (buffer-write! buf-3 [1 2 3 4 5 6 0 0 0 0 0 0 0 0 0 0])
 
+
+;;play some low over it
 (low 30 :length 60)
 (ctl low :length 10)
 (ctl low :freq 30)
@@ -290,20 +336,21 @@
 (ctl low :freq 30)
 
 
-;;start
+
 (stop)
 
+;;start urlitzer
 (play-beep (now) wurlitzer5 364)
 
 (defsynth root-trg [rate 160.5]
   (out:kr root-trg-bus (impulse:kr rate)))
 
-(stop)
 
 ;;intro
+
 (do
   (volume 0.7)
-  (recording-start "~/Desktop/wurlitzer.wav")
+  ;;(recording-start "~/Desktop/wurlitzer.wav") comment this back in to record
   (buffer-write! buf-0 [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0])  ;; kick
   (buffer-write! buf-1 [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0])  ;; click
   (buffer-write! buf-2 [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0])  ;; tick
@@ -339,19 +386,18 @@
   (def dub-note-seq (note-sequencer buf-4 meter-cnt-bus32 piano-note-bus)))
 
 
-(stop)
 
-
-;;Intro drums
+;;Intro drums; eval after 2 measures
 (buffer-write! buf-0 [0 0 1 0 0 1 0 0 1 0 0 0 0 0 0 1])  ;; kick
 (buffer-write! buf-1 [0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 0])  ;; click
 
-;;SILENCE
+;;SILENCE; eval after 6 measures
 (buffer-write! buf-0 [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0])  ;; kick
 (buffer-write! buf-1 [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0])
 (buffer-write! buf-3 [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0])
 
 
+;; eval after 8 measures
 (do
   ;;second
   (buffer-write! buf-0 [0 1 1 0 0 0 0 1 1 0 1 1 0 0 0 1])  ;; kick
@@ -372,8 +418,6 @@
   (let [t (+ (now))]
     (play-beep t (flatten (repeat 8 wurlitzer1 )) 374)
     (play-beep t (lazy-cat wurlitzer1 wurlitzer3 wurlitzer3 wurlitzer3 wurlitzer3 wurlitzer3 wurlitzer3 wurlitzer3 wurlitzer3) 374)))
-(volume 0.7)
-(volume 0)
 
 ;;ends with clicks
 (buffer-write! buf-0 [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0])  ;; kick
@@ -467,16 +511,24 @@
 ;; create an instance of the synth
 (def N0 (monotron 40 0.8 1 0.0 2.5 350.0 800.0 3.0))
 
-(ctl N0 :note   40)               ;; midi note value: 0 to 127
+(ctl N0 :note   50)               ;; midi note value: 0 to 127
+(ctl N0 :note   60)
 (ctl N0 :volume 0.7)              ;; gain of the output: 0.0 to 1.0
 (ctl N0 :mod_pitch_not_cutoff 0)  ;; use 0 or 1 only to select LFO pitch or cutoff modification
+(ctl N0 :mod_pitch_not_cutoff 1)
 (ctl N0 :pitch  10.0)             ;; this + note is frequency of the VCO
+(ctl N0 :pitch  0.0)
 (ctl N0 :rate   1.5)              ;; frequency of the LFO
+(ctl N0 :rate   16.0)              ;; so dirty
+(ctl N0 :rate   2.5)
 (ctl N0 :int    800.0)           ;; intensity of the LFO
+(ctl N0 :int    350.0)
 (ctl N0 :cutoff 600.0)           ;; cutoff frequency of the VCF
+(ctl N0 :cutoff 800.0)
 (ctl N0 :peak   0.5)              ;; VCF peak control (resonance) 0.0 to 4.0
+(ctl N0 :peak   0)
 
-
+(stop)
 
 
 
@@ -500,14 +552,59 @@
 
 ;; play the instrument:
 (def t (thx :amp 2))
+;; make it fly away
 (ctl t :gate 0)
 
 
 
+;; ======================================================================
+;; make some dub step
+
+(defn later [t]
+    (+ (now) t))
+
+(defcgen kick-drum
+  "basic synthesised kick drum"
+  [bpm {:default 120 :doc "tempo of kick in beats per minute"}
+   pattern {:default [1 0] :doc "sequence pattern of beats"}]
+  (:ar
+   (let [kickenv (decay (t2a (demand (impulse:kr (/ bpm 30)) 0 (dseq pattern INF))) 0.7)
+         kick (* (* kickenv 7) (sin-osc (+ 40 (* kickenv kickenv kickenv 200))))]
+     (clip2 kick 3))))
 
 
+(defcgen snare-drum
+  "basic synthesised snare drum"
+  [bpm {:default 120 :doc "tempo of snare in beats per minute"}]
+  (:ar
+   (let [snare (* 3 (pink-noise) (apply + (* (decay (impulse (/ bpm 240) 0.5) [0.4 2]) [1 0.05])))
+         snare (+ snare (bpf (* 4 snare) 2000))]
+     (clip2 snare 1))))
 
 
+(defcgen wobble
+  "wobble an input src"
+  [src {:doc "input source"}
+   wobble-factor {:doc "num wobbles per second"}]
+  (:ar
+   (let [sweep (lin-exp (lf-tri wobble-factor) -1 1 40 3000)
+         wob   (lpf src sweep)
+         wob   (* 0.8 (normalizer wob))
+         wob   (+ wob (bpf wob 1500 2))]
+     (+ wob (* 0.2 (g-verb wob 9 0.7 0.7))))))
+
+
+(definst dubstep [bpm 120 wobble-factor 1 note 50]
+ (let [freq (midicps (lag note 0.25))
+       bass (apply + (saw (* freq [0.99 1.01])))
+       bass (wobble bass wobble-factor)
+       kick (kick-drum bpm :pattern [1 0 0 0 0 0 1 0 1 0 0 1 0 0 0 0])
+       snare (snare-drum bpm)]
+
+   (clip2 (+ bass kick snare) 1)))
+
+
+(dubstep)
 
 
 ;; ======================================================================
