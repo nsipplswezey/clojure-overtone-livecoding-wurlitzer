@@ -5,7 +5,7 @@ Starts with sequence buffers. Then instruments. Then instrument triggers. Inspir
 
 ## Usage
 
-Intended to be sequentially executed using a repl. I recorded and performed this piece using LightTable which is a very pleasant clojure IDE.
+Intended to be sequentially executed using a repl. I recorded and performed this piece using LightTable which is a very pleasant clojure IDE. Go to src/core.clj, then start evaling! First eval is slow while clojure gathers dependencies and overtone starts up.
 
 ## Notes
 
